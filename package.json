@@ -1,0 +1,56 @@
+{
+  "name": "site-health-checker",
+  "displayName": "Site Health Checker",
+  "description": "VS Code extension to monitor website health with status indicator.",
+  "version": "0.0.1",
+  "publisher": "khabouss",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/khabouss/site-health-checker"
+  },
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "siteHealth.setUrl",
+        "title": "Set Website URL for Health Check"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Site Health Monitor",
+      "properties": {
+        "siteHealth.url": {
+          "type": "string",
+          "default": "",
+          "description": "URL of the website to monitor"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.70.0",
+    "@types/node": "^16.0.0",
+    "typescript": "^4.7.4",
+    "vscode-test": "^1.6.1"
+  },
+  "dependencies": {
+    "axios": "^1.4.0"
+  }
+}
