@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import axios from 'axios';
 
 let interval: NodeJS.Timer;
+let blinkInterval: NodeJS.Timer | undefined;
+let isVisible = true;
 
 export function activate(context: vscode.ExtensionContext) {
   const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -10,11 +12,38 @@ export function activate(context: vscode.ExtensionContext) {
 
   const config = vscode.workspace.getConfiguration('siteHealth');
   let url = config.get<string>('url') || '';
+  
+  // Store status text for blinking
+  let statusText = '';
+  
+  function startBlinking() {
+    // Clear existing blink interval if there is one
+    if (blinkInterval) {
+      clearInterval(blinkInterval);
+    }
+    
+    // Start blinking effect
+    blinkInterval = setInterval(() => {
+      isVisible = !isVisible;
+      statusBar.text = isVisible ? statusText : '';
+    }, 500); // Blink every 500ms
+  }
+  
+  function stopBlinking() {
+    if (blinkInterval) {
+      clearInterval(blinkInterval);
+      blinkInterval = undefined;
+    }
+    isVisible = true;
+    statusBar.text = statusText;
+  }
 
   async function checkHealth() {
     if (!url) {
-      statusBar.text = '🔴 No URL set';
+      statusText = '🔴 No URL set';
+      statusBar.text = statusText;
       statusBar.tooltip = 'Set your siteHealth.url in settings';
+      startBlinking();
       return;
     }
 
@@ -22,22 +51,32 @@ export function activate(context: vscode.ExtensionContext) {
       const res = await axios.get(url, { timeout: 5000 });
 
       if (res.status >= 200 && res.status < 300) {
-        statusBar.text = '🟢 Healthy';
+        statusText = '🟢 Healthy';
+        statusBar.text = statusText;
         statusBar.tooltip = `HTTP ${res.status}`;
+        stopBlinking(); // Stop blinking for green status
       } else if (res.status >= 500) {
-        statusBar.text = '🔴 Server Error';
+        statusText = '🔴 Server Error';
+        statusBar.text = statusText;
         statusBar.tooltip = `HTTP ${res.status}`;
+        startBlinking();
       } else {
-        statusBar.text = '🟡 Unstable';
+        statusText = '🟡 Unstable';
+        statusBar.text = statusText;
         statusBar.tooltip = `HTTP ${res.status}`;
+        startBlinking();
       }
     } catch (err: any) {
       if (err.code === 'ECONNABORTED') {
-        statusBar.text = '🟡 Timeout';
+        statusText = '🟡 Timeout';
+        statusBar.text = statusText;
         statusBar.tooltip = 'Request timed out';
+        startBlinking();
       } else {
-        statusBar.text = '🔴 Error';
+        statusText = '🔴 Error';
+        statusBar.text = statusText;
         statusBar.tooltip = err.message || 'Unknown error';
+        startBlinking();
       }
     }
   }
@@ -63,4 +102,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
   clearInterval(interval);
+  if (blinkInterval) {
+    clearInterval(blinkInterval);
+  }
 }
